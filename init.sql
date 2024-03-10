@@ -1,9 +1,3 @@
--- DROP TABLE "transacoes";
--- DROP TABLE "clientes";
-
--- DROP FUNCTION "extrato";
--- DROP FUNCTION "transacao";
-
 CREATE UNLOGGED TABLE IF NOT EXISTS "clientes" (
 	"id" SERIAL NOT NULL PRIMARY KEY,
 	"limite" INTEGER NOT NULL,
