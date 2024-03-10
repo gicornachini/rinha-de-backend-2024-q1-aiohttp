@@ -11,17 +11,14 @@ def is_transaction_invalid(valor, tipo, descricao):
             or (tipo != "c" and tipo != "d"));
 
 def transaction_format(db_response):
-    evaluated_db_response = eval(db_response[0])
-    status_code = evaluated_db_response[0]
+    parsed_db_response = db_response[0][1:-1].split(",")
+    status_code = parsed_db_response[0]
 
-    customer_response = evaluated_db_response[1] if len(evaluated_db_response) > 1 else None
-    if customer_response:
-        response_result = []
-        splitted = customer_response.replace("{", "").replace("}", "").split(", ")
-        for s in splitted:
-            response_result.append(s.strip().split(' : '))
-        return status_code, dict(response_result)
-    return status_code, customer_response
+    limite = parsed_db_response[1]
+    saldo = parsed_db_response[2]
+
+    return status_code, {"limite": limite,
+                         "saldo": saldo}
 
 
 async def transaction(request):
@@ -44,7 +41,7 @@ async def transaction(request):
         return web.json_response({}, status=404)
 
     status_code, customer_response = transaction_format(db_result)
-    if status_code == 0:
+    if status_code == "0":
         return web.json_response(customer_response)
         
     return web.json_response({}, status=422)

@@ -1,8 +1,8 @@
-DROP TABLE "transacoes";
-DROP TABLE "clientes";
+-- DROP TABLE "transacoes";
+-- DROP TABLE "clientes";
 
-DROP FUNCTION "extrato";
-DROP FUNCTION "transacao";
+-- DROP FUNCTION "extrato";
+-- DROP FUNCTION "transacao";
 
 CREATE UNLOGGED TABLE IF NOT EXISTS "clientes" (
 	"id" SERIAL NOT NULL PRIMARY KEY,
@@ -40,7 +40,8 @@ CREATE OR REPLACE FUNCTION transacao(
     _tipo CHAR,
     _descricao VARCHAR(10),
     OUT codigo_erro SMALLINT,
-    OUT resultado JSON
+    OUT out_limite INTEGER,
+	OUT out_saldo BIGINT
 )
 RETURNS record AS
 $$
@@ -49,7 +50,7 @@ BEGIN
             UPDATE clientes 
             SET saldo = saldo + _valor 
             WHERE id = _cliente_id 
-            RETURNING json_build_object('limite', limite, 'saldo', saldo) INTO resultado;
+            RETURNING limite, saldo INTO out_limite, out_saldo;
             INSERT INTO transacoes(cliente_id, valor, tipo, descricao)
             VALUES (_cliente_id, _valor, _tipo, _descricao);
             codigo_erro := 0;
@@ -58,7 +59,7 @@ BEGIN
             UPDATE clientes
             SET saldo = saldo - _valor
             WHERE id = _cliente_id AND saldo - _valor > -limite
-            RETURNING json_build_object('limite', limite, 'saldo', saldo) INTO resultado;
+            RETURNING limite, saldo INTO out_limite, out_saldo;
             
             IF FOUND THEN 
               INSERT INTO transacoes(cliente_id, valor, tipo, descricao)
@@ -66,13 +67,11 @@ BEGIN
               codigo_erro := 0;
             ELSE 
               codigo_erro := 2;
-              resultado := NULL;
             END IF;
 
             RETURN;
         ELSE
-            codigo_erro := 2;
-            resultado := NULL;
+            codigo_erro := 3;
             RETURN;
         END IF;
 END;
